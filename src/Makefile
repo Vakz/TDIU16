@@ -45,3 +45,6 @@ revert::
 		echo "Processing $$i";			\
 		mv $$i~~ $$i;				\
 	done
+
+run:
+	cd userprog && pintos -p ../examples/sumargv -a sumargv -v -k --fs-disk=2 -- -f -q run sumargv
