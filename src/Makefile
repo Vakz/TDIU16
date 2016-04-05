@@ -1,4 +1,5 @@
 BUILD_SUBDIRS = threads userprog vm filesys
+TEST_FILE := $(word 2, $(MAKECMDGOALS))
 
 all::
 	@echo "Run 'make' in subdirectories: $(BUILD_SUBDIRS)."
@@ -47,4 +48,7 @@ revert::
 	done
 
 run:
-	cd userprog && pintos -p ../examples/sumargv -a sumargv -v -k --fs-disk=2 -- -f -q run sumargv
+
+	@echo $(TEST_FILE)
+	cd userprog && pintos -p "../examples/${TEST_FILE}" -a $(TEST_FILE) -v -k --fs-disk=2 -- -f -q run $(TEST_FILE)
+	cd ..
