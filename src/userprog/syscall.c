@@ -53,7 +53,47 @@ syscall_handler (struct intr_frame *f)
     case SYS_HALT:
     {
       power_off();
+    }
+    case SYS_EXIT:
+    {
+      int status = *(esp+1);
+      printf("Status code: %i\n", status);
+      process_exit(status);
       thread_exit();
+      break;
+    }
+    case SYS_READ:
+    {
+      int fd = esp[1];
+
+      if (fd != STDIN_FILENO) {
+        f->eax = -1;
+        break;
+      }
+
+      char* buffer = (char*)esp[2];
+      unsigned int length = esp[3];
+
+      for (unsigned int i = 0; i < length; ++i) {
+        buffer[i] = input_getc();
+        if (buffer[i] == '\r') buffer[i] = '\n';
+        putbuf(&buffer[i], 1);
+      }
+      f->eax = esp[3];
+      break;
+    }
+    case SYS_WRITE:
+    {
+      int fd = esp[1];
+
+      if (fd != STDOUT_FILENO) {
+        f->eax = -1;
+        break;
+      }
+
+      putbuf((char*)esp[2], esp[3]);
+      f->eax = esp[3];
+      break;
     }
     default:
     {
