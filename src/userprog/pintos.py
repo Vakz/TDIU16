@@ -30,4 +30,7 @@ if args.programargs: command += " " + " ".join(args.programargs)
 
 print(command)
 
-subprocess.call(command, shell=True)
+try:
+    subprocess.call(command, shell=True)
+except KeyboardInterrupt:
+    print("Keyboard Interrupt. Terminating..")
