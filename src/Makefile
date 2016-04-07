@@ -46,9 +46,3 @@ revert::
 		echo "Processing $$i";			\
 		mv $$i~~ $$i;				\
 	done
-
-run:
-
-	@echo $(TEST_FILE)
-	cd userprog && pintos -p "../examples/${TEST_FILE}" -a $(TEST_FILE) -k --fs-disk=2 -- -f -q run $(TEST_FILE)
-	cd ..
