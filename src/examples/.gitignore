@@ -37,3 +37,4 @@ dir_stress
 create_file
 create_remove_file
 *.d
+libc.a
