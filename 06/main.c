@@ -90,7 +90,7 @@ int main()
     obj = map_find(&container, id);
 
     /*! if it was found, display it */
-    printf("Value: %i\n", obj);
+    printf("Value: %s\n", obj);
 
     /* since we leave the value in the map we may use it again and
      * should not free the memory */
@@ -104,11 +104,11 @@ int main()
 
     /*! find and remove a value for a key in the map */
     obj = map_remove(&container, id);
-
     /*! if it was found, display it */
-    printf("Removed value: %i\n", obj);
+    printf("Removed value: %s\n", obj);
     /* since we removed the value from the map we will never use it again and
      * must properly free the memory (if it was allocated) */
+     free(obj);
   }
 
   /*! print all strings representing an integer less than N */

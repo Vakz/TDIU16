@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 void map_init(struct map* m) {
+  m->next_key = 0;
   list_init(&m->content);
 }
 
@@ -13,6 +14,7 @@ key_t map_insert(struct map* m, value_t v) {
   elem->key = m->next_key++;
 
   list_push_front(&m->content, &elem->elem);
+  return elem->key;
 }
 
 struct map_element* find_list_elem(struct list* l, key_t k) {
@@ -27,7 +29,6 @@ struct map_element* find_list_elem(struct list* l, key_t k) {
 
 value_t map_find(struct map* m, key_t k) {
   struct map_element* e = find_list_elem(&m->content, k);
-  printf("Returning %i", e->value);
   return e == NULL ? NULL : e->value;
 }
 
@@ -52,7 +53,7 @@ void map_remove_if(struct map* m, bool (*cond)(key_t k, value_t v, int aux), int
     struct map_element* elem = list_entry(e, struct map_element, elem);
     if (cond(elem->key, elem->value, aux)) {
       e = list_remove(e);
-      free(e);
+      free(elem);
     }
     else {
       e = list_next(e);
