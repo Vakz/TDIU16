@@ -16,13 +16,17 @@
 
 /* included for implementation of syscalls */
 #include "threads/init.h"
+#include "userprog/flist.h"
 
 static void syscall_handler (struct intr_frame *);
+
+struct flist file_list;
 
 void
 syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+  flist_init(&file_list);
 }
 
 
@@ -45,6 +49,15 @@ const int argc[] = {
 };
 
 static void
+read_keyboard(char* buffer, unsigned int length) {
+  for (unsigned int i = 0; i < length; ++i) {
+    buffer[i] = input_getc();
+    if (buffer[i] == '\r') buffer[i] = '\n';
+    putbuf(&buffer[i], 1);
+  }
+}
+
+static void
 syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
@@ -65,20 +78,17 @@ syscall_handler (struct intr_frame *f)
     case SYS_READ:
     {
       int fd = esp[1];
+      char* buffer = (char*)esp[2];
+      unsigned int length = esp[3];
 
       if (fd != STDIN_FILENO) {
         f->eax = -1;
         break;
       }
-
-      char* buffer = (char*)esp[2];
-      unsigned int length = esp[3];
-
-      for (unsigned int i = 0; i < length; ++i) {
-        buffer[i] = input_getc();
-        if (buffer[i] == '\r') buffer[i] = '\n';
-        putbuf(&buffer[i], 1);
+      else {
+        read_keyboard(buffer, length);
       }
+
       f->eax = esp[3];
       break;
     }
@@ -93,6 +103,16 @@ syscall_handler (struct intr_frame *f)
 
       putbuf((char*)esp[2], esp[3]);
       f->eax = esp[3];
+      break;
+    }
+    case SYS_OPEN:
+    {
+      const char* filename = (char*)esp[1];
+      struct file* opened_file = filesys_open(filename);
+      if (opened_file == NULL) {
+        f->eax = -1;
+      }
+      flist_insert(&file_list, opened_file, thread_current()->tid);
       break;
     }
     default:
