@@ -20,13 +20,11 @@
 
 static void syscall_handler (struct intr_frame *);
 
-struct flist file_list;
-
 void
 syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
-  flist_init(&file_list);
+  flist_init();
 }
 
 
@@ -48,13 +46,78 @@ const int argc[] = {
   0
 };
 
-static void
-read_keyboard(char* buffer, unsigned int length) {
-  for (unsigned int i = 0; i < length; ++i) {
-    buffer[i] = input_getc();
-    if (buffer[i] == '\r') buffer[i] = '\n';
-    putbuf(&buffer[i], 1);
+static int
+syscall_read(int fd, void* buffer, unsigned int length) {
+  char* buffer_p = (char*)buffer;
+  if (fd == STDOUT_FILENO) return -1;
+
+  // Reading from keyboard
+  if (fd == STDIN_FILENO) {
+    for (unsigned int i = 0; i < length; ++i) {
+      buffer_p[i] = input_getc();
+      if (buffer_p[i] == '\r') buffer_p[i] = '\n';
+      putbuf(&buffer_p[i], 1);
+    }
+    return length;
   }
+  // Reading a file
+  struct file* f = flist_find(thread_current()->tid, fd);
+  if (f == NULL) {
+
+    return -1;
+  }
+  return file_read(f, buffer, length);
+}
+
+static int
+syscall_write(int fd, const void* buffer, unsigned int length) {
+  if (fd == STDIN_FILENO) return -1;
+
+  // Writing to screen
+  if (fd == STDOUT_FILENO) {
+    putbuf((char*)buffer, length);
+    return length;
+  }
+
+  // Writing to file
+  struct file* f = flist_find(thread_current()->tid, fd);
+  if (f == NULL) return -1;
+  return file_write(f, buffer, length);
+}
+
+static int
+syscall_open(const char* file) {
+  struct file* opened_file = filesys_open(file);
+  if (opened_file == NULL) {
+    return -1;
+  }
+  return flist_insert(opened_file, thread_current()->tid);
+}
+
+static void
+syscall_seek(int fd, unsigned int position) {
+  struct file* f = flist_find(thread_current()->tid, fd);
+  if (f != NULL) {
+    file_seek(f, position);
+  }
+}
+
+static unsigned int
+syscall_tell(int fd) {
+  struct file* f = flist_find(thread_current()->tid, fd);
+  if (f != NULL) {
+    return file_tell(f);
+  }
+  return -1;
+}
+
+static int
+syscall_filesize(int fd) {
+  struct file* f = flist_find(thread_current()->tid, fd);
+  if (f != NULL) {
+    return file_length(f);
+  }
+  return -1;
 }
 
 static void
@@ -77,42 +140,50 @@ syscall_handler (struct intr_frame *f)
     }
     case SYS_READ:
     {
-      int fd = esp[1];
-      char* buffer = (char*)esp[2];
-      unsigned int length = esp[3];
-
-      if (fd != STDIN_FILENO) {
-        f->eax = -1;
-        break;
-      }
-      else {
-        read_keyboard(buffer, length);
-      }
-
-      f->eax = esp[3];
+      // fd, buffer, length
+      f->eax = syscall_read(esp[1], (void*)esp[2], esp[3]);
       break;
     }
     case SYS_WRITE:
     {
-      int fd = esp[1];
-
-      if (fd != STDOUT_FILENO) {
-        f->eax = -1;
-        break;
-      }
-
-      putbuf((char*)esp[2], esp[3]);
-      f->eax = esp[3];
+      // fd, buffer, length
+      f->eax = syscall_write(esp[1], (void*)esp[2], esp[3]);
       break;
     }
     case SYS_OPEN:
     {
-      const char* filename = (char*)esp[1];
-      struct file* opened_file = filesys_open(filename);
-      if (opened_file == NULL) {
-        f->eax = -1;
-      }
-      flist_insert(&file_list, opened_file, thread_current()->tid);
+      f->eax = syscall_open((char*)esp[1]);
+      break;
+    }
+    case SYS_REMOVE:
+    {
+
+      f->eax = filesys_remove((char*)esp[1]);
+      break;
+    }
+    case SYS_CREATE:
+    {
+      f->eax = filesys_create((char*)esp[1], esp[2]);
+      break;
+    }
+    case SYS_CLOSE:
+    {
+      flist_remove(thread_current()->tid, esp[1]);
+      break;
+    }
+    case SYS_SEEK:
+    {
+      syscall_seek(esp[1], esp[2]);
+      break;
+    }
+    case SYS_TELL:
+    {
+      f->eax = syscall_tell(esp[1]);
+      break;
+    }
+    case SYS_FILESIZE:
+    {
+      f->eax = syscall_filesize(esp[1]);
       break;
     }
     default:

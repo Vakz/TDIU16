@@ -47,15 +47,15 @@ struct flist_element {
 };
 
 
-void flist_init(struct flist* m);
-int flist_insert(struct flist* m, struct file* f, int pid);
-struct file* flist_find(struct flist* m, int pid, int fd);
-struct flist_element* find_flist_elem(struct list* l, int fd);
+void flist_init(void);
+int flist_insert(struct file* f, int pid);
+struct file* flist_find(int pid, int fd);
+struct flist_element* flist_find_elem(int fd);
 void flist_free_element(struct flist_element* e);
-void flist_remove(struct flist* m, int pid, int fd);
-void flist_for_each(struct flist* m, int pid, void (*exec)(int fd, struct file* f, int aux), int aux);
-void flist_remove_if(struct flist* m, int pid, bool (*cond)(int fd, struct file* f, int aux), int aux);
-void flist_close_process_files(struct flist* l, int pid);
+void flist_remove(int pid, int fd);
+void flist_for_each(int pid, void (*exec)(int fd, struct file* f, int aux), int aux);
+void flist_remove_if(int pid, bool (*cond)(int fd, struct file* f, int aux), int aux);
+void flist_close_process_files(int pid);
 
 
 #endif

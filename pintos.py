@@ -33,15 +33,17 @@ if args.u and subprocess.call("make -C ../examples", shell=True) != 0:
     print("Make Examples failed, exiting")
     exit(1)
 
-command = "pintos -p ../examples/{0} -a {0}"
+command = "pintos -p ../examples/{0} -a testfile"
 
 if args.v: command += " -v"
 
-command += " -k --fs-disk=2 -- -f -q run {0}"
+command += " -k --fs-disk=2 -- -f -q run 'testfile"
 
 command = command.format(args.program)
 
 if args.programargs: command += " " + " ".join(args.programargs)
+
+command += "'"
 
 print(command)
 
