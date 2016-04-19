@@ -21,6 +21,7 @@
 int
 main (int argc, char **argv)
 {
+  printf("First argument: %s\n", argv[2]);
   int i;
   int sum = 0;
   char* argv_me = "sumargv";
@@ -31,12 +32,14 @@ main (int argc, char **argv)
     return 111;
 
   /* Weighted sum of characters in "sumargv". */
-  for (p = argv_me, i = 0; *p; ++p, ++i)
+  for (p = argv_me, i = 0; *p; ++p, ++i) {
     sum += (*p - 'a') * i;
+  }
 
   /* Weighted sum of characters in `argv[0]'. */
-  for (p = argv[0], i = 0; *p; ++p, ++i)
+  for (p = argv[0], i = 0; *p; ++p, ++i) {
     sum -= (*p - 'a') * i;
+  }
 
   /* The `sum' should now be zero if the program name `argv[0]' is
    * correctly set up. */
@@ -44,7 +47,6 @@ main (int argc, char **argv)
   /* Interpret all remaining command line words as numbers and sum them. */
   for (i = 1; i < argc; i++)
     sum += atoi(argv[i]);
-
   /* If `argv' ends correctly with a null pointer this has no effect. */
   sum += (int)argv[argc];
 

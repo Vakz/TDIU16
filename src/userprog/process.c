@@ -1,6 +1,7 @@
 #include <debug.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "userprog/gdt.h"      /* SEL_* constants */
 #include "userprog/process.h"
@@ -50,6 +51,25 @@ void process_print_list()
 struct parameters_to_start_process
 {
   char* command_line;
+};
+
+struct main_args
+{
+  /* Hint: When try to interpret C-declarations, read from right to
+   * left! It is often easier to get the correct interpretation,
+   * altough it does not always work. */
+
+  /* Variable "ret" that stores address (*ret) to a function taking no
+   * parameters (void) and returning nothing. */
+  void (*ret)(void);
+
+  /* Just a normal integer. */
+  int argc;
+
+  /* Variable "argv" that stores address to an address storing char.
+   * That is: argv is a pointer to char*
+   */
+  char** argv;
 };
 
 static void
@@ -106,6 +126,68 @@ process_execute (const char *command_line)
   return process_id;
 }
 
+void* setup_main_stack(const char* command_line, void* stack_top)
+{
+  /* Variable "esp" stores an address, and at the memory loaction
+   * pointed out by that address a "struct main_args" is found.
+   * That is: "esp" is a pointer to "struct main_args" */
+  struct main_args* esp;
+  int argc;
+  int total_size;
+  int line_size;
+  /* "cmd_line_on_stack" and "ptr_save" are variables that each store
+   * one address, and at that address (the first) char (of a possible
+   * sequence) can be found. */
+  char* cmd_line_on_stack;
+  char* ptr_save;
+  int i = 0;
+
+  /* calculate the bytes needed to store the command_line */
+  line_size = strlen(command_line) + 1;
+  /* round up to make it even divisible by 4 */
+  line_size = line_size % 4 == 0 ? line_size : line_size + (4 - line_size % 4);
+
+  /* calculate how many words the command_line contain */
+  argc = 0;
+  bool prev = true;
+  // Works by counting the first letter in each word, rather than counting
+  // spaces. This way, we avoid multiple spaces between words.
+  while(command_line[i++])
+  {
+    if (command_line[i] != ' ' && prev) {
+      ++argc;
+      prev = false;
+    }
+    else if (command_line[i] == ' ') {
+      prev = true;
+    }
+  }
+
+  /* calculate the size needed on our simulated stack */
+  // 20 is the bytes used by pointers which will Always be present
+  total_size = line_size + 20 + 4*argc;
+  /* calculate where the final stack top will be located */
+  esp = (struct main_args*)((unsigned)stack_top - total_size);
+  /* setup return address and argument count */
+  esp->ret = 0;
+  esp->argc = argc;
+  /* calculate where in the memory the argv array starts */
+  esp->argv = (char**)esp + 3;
+
+  /* calculate where in the memory the words is stored */
+  cmd_line_on_stack = (char*)(esp->argv + argc + 2);
+  /* copy the command_line to where it should be in the stack */
+  strlcpy(cmd_line_on_stack, command_line, strlen(command_line) + 1);
+  /* build argv array and insert null-characters after each word */
+  i = 0;
+  char delim = ' ';
+  for (char* s = strtok_r(cmd_line_on_stack, &delim, &ptr_save); s != NULL; s = strtok_r(NULL, &delim, &ptr_save)) {
+    esp->argv[i++] = s;
+  }
+  esp->argv[i] = 0;
+  return esp; /* the new stack top */
+}
+
 /* A thread function that loads a user process and starts it
    running. */
 static void
@@ -147,14 +229,13 @@ start_process (struct parameters_to_start_process* parameters)
        "pretend" the arguments are present on the stack. A normal
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
-
-    HACK if_.esp -= 12; /* Unacceptable solution. */
+       if_.esp = setup_main_stack(parameters->command_line, PHYS_BASE);
 
     /* The stack and stack pointer should be setup correct just before
        the process start, so this is the place to dump stack content
        for debug purposes. Disable the dump when it works. */
 
-//    dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
+    //dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
 
   }
 
@@ -183,6 +264,8 @@ start_process (struct parameters_to_start_process* parameters)
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
+
+
 
 /* Wait for process `child_id' to die and then return its exit
    status. If it was terminated by the kernel (i.e. killed due to an
