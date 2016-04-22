@@ -165,7 +165,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
 
   /* calculate the size needed on our simulated stack */
   // 20 is the bytes used by pointers which will Always be present
-  total_size = line_size + 20 + 4*argc;
+  total_size = line_size + 16 + 4*argc;
   /* calculate where the final stack top will be located */
   esp = (struct main_args*)((unsigned)stack_top - total_size);
   /* setup return address and argument count */
@@ -175,7 +175,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   esp->argv = (char**)esp + 3;
 
   /* calculate where in the memory the words is stored */
-  cmd_line_on_stack = (char*)(esp->argv + argc + 2);
+  cmd_line_on_stack = (char*)(esp->argv + argc + 1);
   /* copy the command_line to where it should be in the stack */
   strlcpy(cmd_line_on_stack, command_line, strlen(command_line) + 1);
   /* build argv array and insert null-characters after each word */
@@ -183,8 +183,10 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   char delim = ' ';
   for (char* s = strtok_r(cmd_line_on_stack, &delim, &ptr_save); s != NULL; s = strtok_r(NULL, &delim, &ptr_save)) {
     esp->argv[i++] = s;
+    printf("Argument %i: %s\n", i-1, s);
   }
   esp->argv[i] = 0;
+  printf("DONE\n");
   return esp; /* the new stack top */
 }
 
@@ -235,7 +237,7 @@ start_process (struct parameters_to_start_process* parameters)
        the process start, so this is the place to dump stack content
        for debug purposes. Disable the dump when it works. */
 
-    //dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
+    dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
 
   }
 

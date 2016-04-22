@@ -21,7 +21,6 @@
 int
 main (int argc, char **argv)
 {
-  printf("First argument: %s\n", argv[2]);
   int i;
   int sum = 0;
   char* argv_me = "sumargv";
