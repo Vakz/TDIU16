@@ -51,6 +51,8 @@ void process_print_list()
 struct parameters_to_start_process
 {
   char* command_line;
+  struct semaphore pid_sync;
+  int ret_code;
 };
 
 struct main_args
@@ -104,6 +106,8 @@ process_execute (const char *command_line)
 
   strlcpy_first_word (debug_name, command_line, 64);
 
+  sema_init(&arguments.pid_sync, 0);
+
   /* SCHEDULES function `start_process' to run (LATER) */
   thread_id = thread_create (debug_name, PRI_DEFAULT,
                              (thread_func*)start_process, &arguments);
@@ -111,11 +115,13 @@ process_execute (const char *command_line)
   process_id = thread_id;
 
   /* AVOID bad stuff by turning off. YOU will fix this! */
-  power_off();
+  //power_off();
 
-
+  sema_down(&arguments.pid_sync);
   /* WHICH thread may still be using this right now? */
   free(arguments.command_line);
+
+  process_id = arguments.ret_code;
 
   debug("%s#%d: process_execute(\"%s\") RETURNS %d\n",
         thread_current()->name,
@@ -183,10 +189,8 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   char delim = ' ';
   for (char* s = strtok_r(cmd_line_on_stack, &delim, &ptr_save); s != NULL; s = strtok_r(NULL, &delim, &ptr_save)) {
     esp->argv[i++] = s;
-    printf("Argument %i: %s\n", i-1, s);
   }
   esp->argv[i] = 0;
-  printf("DONE\n");
   return esp; /* the new stack top */
 }
 
@@ -232,15 +236,16 @@ start_process (struct parameters_to_start_process* parameters)
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
        if_.esp = setup_main_stack(parameters->command_line, PHYS_BASE);
-
+       parameters->ret_code = thread_current()->tid;
     /* The stack and stack pointer should be setup correct just before
        the process start, so this is the place to dump stack content
        for debug purposes. Disable the dump when it works. */
 
-    dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
+    //dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
 
   }
 
+  sema_up(&parameters->pid_sync);
   debug("%s#%d: start_process(\"%s\") DONE\n",
         thread_current()->name,
         thread_current()->tid,
@@ -255,9 +260,9 @@ start_process (struct parameters_to_start_process* parameters)
   */
   if ( ! success )
   {
+    parameters->ret_code = -1;
     thread_exit ();
   }
-
   /* Start the user process by simulating a return from an interrupt,
      implemented by intr_exit (in threads/intr-stubs.S). Because
      intr_exit takes all of its arguments on the stack in the form of
