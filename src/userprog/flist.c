@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "threads/malloc.h"
 #include <list.h>
-#include <stdio.h>
 #include "flist.h"
 
 struct flist open_files;

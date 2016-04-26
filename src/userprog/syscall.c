@@ -17,6 +17,7 @@
 /* included for implementation of syscalls */
 #include "threads/init.h"
 #include "userprog/flist.h"
+#include "devices/timer.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -138,6 +139,11 @@ syscall_handler (struct intr_frame *f)
       thread_exit();
       break;
     }
+    case SYS_EXEC:
+    {
+      f->eax = process_execute((char*)esp[1]);
+      break;
+    }
     case SYS_READ:
     {
       // fd, buffer, length
@@ -184,6 +190,16 @@ syscall_handler (struct intr_frame *f)
     case SYS_FILESIZE:
     {
       f->eax = syscall_filesize(esp[1]);
+      break;
+    }
+    case SYS_SLEEP:
+    {
+      timer_msleep(esp[1]);
+      break;
+    }
+    case SYS_PLIST:
+    {
+      process_print_list();
       break;
     }
     default:

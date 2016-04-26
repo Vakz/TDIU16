@@ -37,14 +37,22 @@ void process_init(void)
  * instead. Note however that all cleanup after a process must be done
  * in process_cleanup, and that process_cleanup are already called
  * from thread_exit - do not call cleanup twice! */
-void process_exit(int status UNUSED)
+void process_exit(int status)
 {
+  struct process_elem* p = plist_find(thread_current()->tid);
+  p->exit_status = status;
+}
+
+void format_process_info(struct process_elem* p) {
+  printf("%i\t%i\t%i\t%i\t%i\n", p->proc_id, p->parent_id, p->exit_status, p->alive, p->parent_alive);
 }
 
 /* Print a list of all running processes. The list shall include all
  * relevant debug information in a clean, readable format. */
 void process_print_list()
 {
+  printf("proc_id\tpar_id\texit\talive\tp_alive\n");
+  plist_for_each(format_process_info);
 }
 
 
@@ -53,6 +61,7 @@ struct parameters_to_start_process
   char* command_line;
   struct semaphore pid_sync;
   int ret_code;
+  int parent_id;
 };
 
 struct main_args
@@ -93,6 +102,8 @@ process_execute (const char *command_line)
 
   /* LOCAL variable will cease existence when function return! */
   struct parameters_to_start_process arguments;
+
+  arguments.parent_id = thread_current()->tid;
 
   debug("%s#%d: process_execute(\"%s\") ENTERED\n",
         thread_current()->name,
@@ -202,6 +213,7 @@ start_process (struct parameters_to_start_process* parameters)
   /* The last argument passed to thread_create is received here... */
   struct intr_frame if_;
   bool success;
+  parameters->ret_code = -1;
 
   char file_name[64];
   strlcpy_first_word (file_name, parameters->command_line, 64);
@@ -242,8 +254,9 @@ start_process (struct parameters_to_start_process* parameters)
        for debug purposes. Disable the dump when it works. */
 
     //dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
-
+    plist_insert(parameters->parent_id, thread_current()->tid);
   }
+
 
   sema_up(&parameters->pid_sync);
   debug("%s#%d: start_process(\"%s\") DONE\n",
@@ -260,7 +273,6 @@ start_process (struct parameters_to_start_process* parameters)
   */
   if ( ! success )
   {
-    parameters->ret_code = -1;
     thread_exit ();
   }
   /* Start the user process by simulating a return from an interrupt,
@@ -329,6 +341,7 @@ process_cleanup (void)
   printf("%s: exit(%d)\n", thread_name(), status);
 
   flist_close_process_files(cur->tid);
+  plist_remove(cur->tid);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

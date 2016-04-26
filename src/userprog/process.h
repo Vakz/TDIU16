@@ -2,8 +2,10 @@
 #define USERPROG_PROCESS_H
 
 #include "threads/thread.h"
+#include "userprog/plist.h"
 
 void process_init (void);
+void format_process_info(struct process_elem* p);
 void process_print_list (void);
 void process_exit (int status);
 tid_t process_execute (const char *file_name);
