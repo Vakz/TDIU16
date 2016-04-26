@@ -225,9 +225,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   DEBUG_thread_count_up();
-  printf("Unblocking\n");
   thread_unblock (t);
-  printf("unblocked\n");
 
   debug("%s#%d: thread_create(\"%s\", ...) RETURNS %d\n",
         thread_current()->name,

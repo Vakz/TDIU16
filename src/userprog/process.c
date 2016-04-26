@@ -41,6 +41,7 @@ void process_exit(int status)
 {
   struct process_elem* p = plist_find(thread_current()->tid);
   p->exit_status = status;
+  sema_up(&p->exit_sync);
 }
 
 void format_process_info(struct process_elem* p) {
@@ -304,6 +305,15 @@ process_wait (int child_id)
   debug("%s#%d: process_wait(%d) ENTERED\n",
         cur->name, cur->tid, child_id);
   /* Yes! You need to do something good here ! */
+  struct process_elem* p = plist_find(child_id);
+  if (p != NULL && p->used && p->parent_id == cur->tid) {
+    sema_down(&p->exit_sync);
+
+    status = p->exit_status;
+    p->used = false;
+  }
+
+
   debug("%s#%d: process_wait(%d) RETURNS %d\n",
         cur->name, cur->tid, child_id, status);
 

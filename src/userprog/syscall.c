@@ -17,6 +17,7 @@
 /* included for implementation of syscalls */
 #include "threads/init.h"
 #include "userprog/flist.h"
+#include "userprog/plist.h"
 #include "devices/timer.h"
 
 static void syscall_handler (struct intr_frame *);
@@ -200,6 +201,12 @@ syscall_handler (struct intr_frame *f)
     case SYS_PLIST:
     {
       process_print_list();
+      break;
+    }
+    case SYS_WAIT:
+    {
+
+      f->eax = process_wait(esp[1]);
       break;
     }
     default:
