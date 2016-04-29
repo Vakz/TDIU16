@@ -2,12 +2,12 @@
 
 #include "plist.h"
 
-
 struct process_elem listed_processes[PLIST_SIZE];
 
 void plist_init(void){
   for (int i = 0; i < PLIST_SIZE; ++i) {
     listed_processes[i].used = false;
+    lock_init(&listed_processes[i].in_use);
   }
 }
 
@@ -21,7 +21,7 @@ int plist_insert(int parent_id, int process_id){
     if (listed_processes[i].used && listed_processes[i].proc_id == parent_id) {
       parent_exists = true;
     }
-    else if (first_free == -1 && !listed_processes[i].used) {
+    else if (first_free == -1 && !listed_processes[i].used && lock_try_acquire(&listed_processes[i].in_use) ) {
       first_free = i;
     }
   }
@@ -36,10 +36,10 @@ int plist_insert(int parent_id, int process_id){
   p->parent_id = parent_id;
   p->exit_status = -1;
   p->alive = true;
-  p->alive = true;
+  p->parent_alive = true;
   p->used = true;
   sema_init(&p->exit_sync, 0);
-
+  lock_release(&p->in_use);
   return process_id;
 }
 

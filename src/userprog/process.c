@@ -37,12 +37,6 @@ void process_init(void)
  * instead. Note however that all cleanup after a process must be done
  * in process_cleanup, and that process_cleanup are already called
  * from thread_exit - do not call cleanup twice! */
-void process_exit(int status)
-{
-  struct process_elem* p = plist_find(thread_current()->tid);
-  p->exit_status = status;
-  sema_up(&p->exit_sync);
-}
 
 void format_process_info(struct process_elem* p) {
   printf("%i\t%i\t%i\t%i\t%i\n", p->proc_id, p->parent_id, p->exit_status, p->alive, p->parent_alive);
@@ -56,6 +50,12 @@ void process_print_list()
   plist_for_each(format_process_info);
 }
 
+void process_exit(int status)
+{
+  struct process_elem* p = plist_find(thread_current()->tid);
+  p->exit_status = status;
+  sema_up(&p->exit_sync);
+}
 
 struct parameters_to_start_process
 {

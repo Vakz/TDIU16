@@ -3,7 +3,7 @@
 #include "threads/synch.h"
 #include <stdbool.h>
 
-#define PLIST_SIZE 1280
+#define PLIST_SIZE 128
 
 /* Place functions to handle a running process here (process list).
 
@@ -40,6 +40,7 @@ struct process_elem {
   bool alive;
   bool parent_alive;
   bool used;
+  struct lock in_use;
   struct semaphore exit_sync;
 };
 
