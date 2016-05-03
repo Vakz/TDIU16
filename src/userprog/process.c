@@ -123,17 +123,15 @@ process_execute (const char *command_line)
   /* SCHEDULES function `start_process' to run (LATER) */
   thread_id = thread_create (debug_name, PRI_DEFAULT,
                              (thread_func*)start_process, &arguments);
-
   process_id = thread_id;
 
-  /* AVOID bad stuff by turning off. YOU will fix this! */
-  //power_off();
-
-  sema_down(&arguments.pid_sync);
+  // If thread_create failed, don't call sema_down, or we will be stuck
+  if (thread_id != -1) {
+    sema_down(&arguments.pid_sync);
+    process_id = arguments.ret_code;
+  }
   /* WHICH thread may still be using this right now? */
   free(arguments.command_line);
-
-  process_id = arguments.ret_code;
 
   debug("%s#%d: process_execute(\"%s\") RETURNS %d\n",
         thread_current()->name,

@@ -135,7 +135,6 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXIT:
     {
       int status = *(esp+1);
-      printf("Status code: %i\n", status);
       process_exit(status);
       thread_exit();
       break;

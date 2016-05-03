@@ -3,7 +3,7 @@
 #include "threads/synch.h"
 #include <stdbool.h>
 
-#define PLIST_SIZE 128
+#define PLIST_SIZE 1280
 
 /* Place functions to handle a running process here (process list).
 
