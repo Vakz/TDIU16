@@ -54,7 +54,7 @@ void process_exit(int status)
 {
   struct process_elem* p = plist_find(thread_current()->tid);
   p->exit_status = status;
-  sema_up(&p->exit_sync);
+
 }
 
 struct parameters_to_start_process
@@ -347,7 +347,7 @@ process_cleanup (void)
    * possibly before the prontf is completed.)
    */
   printf("%s: exit(%d)\n", thread_name(), status);
-
+  sema_up(&p->exit_sync);
   flist_close_process_files(cur->tid);
   plist_remove(cur->tid);
 
