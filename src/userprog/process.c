@@ -13,6 +13,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"     /* PHYS_BASE */
 #include "threads/interrupt.h" /* if_ */
+#include "threads/init.h"      /* power_off() */
 
 /* Headers not yet used that you may need for various reasons. */
 #include "threads/synch.h"
@@ -344,7 +345,7 @@ process_cleanup (void)
    * important to do this printf BEFORE you tell the parent process
    * that you exit.  (Since the parent may be the main() function,
    * that may sometimes poweroff as soon as process_wait() returns,
-   * possibly before the prontf is completed.)
+   * possibly before the printf is completed.)
    */
   printf("%s: exit(%d)\n", thread_name(), status);
   sema_up(&p->exit_sync);
