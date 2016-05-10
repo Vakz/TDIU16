@@ -1,7 +1,6 @@
 #ifndef _flist_H_
 #define _flist_H_
 
-<<<<<<< HEAD
 /* Place functions to handle a process open files here (file list).
 
    flist.h : Your function declarations and documentation.
@@ -58,8 +57,6 @@ void flist_for_each(int pid, void (*exec)(int fd, struct file* f, int aux), int 
 void flist_remove_if(int pid, bool (*cond)(int fd, struct file* f, int aux), int aux);
 void flist_close_process_files(int pid);
 
-
-=======
 /* Place code to keep track of your per-process open file table here.
  *
  * (The system-wide open file table exist as part of filesys/inode.c )
@@ -122,6 +119,4 @@ void flist_close_process_files(int pid);
  * where to declare and initialize it correctly. In both cases, consider
  * what size limit that may be appropriate.
  */
-
->>>>>>> merger
 #endif

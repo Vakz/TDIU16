@@ -258,12 +258,12 @@ start_process (struct parameters_to_start_process* parameters)
   }
 
 
-  sema_up(&parameters->pid_sync);
+
   debug("%s#%d: start_process(\"%s\") DONE\n",
         thread_current()->name,
         thread_current()->tid,
         parameters->command_line);
-
+  sema_up(&parameters->pid_sync);
 
   /* If load fail, quit. Load may fail for several reasons.
      Some simple examples:
@@ -348,9 +348,12 @@ process_cleanup (void)
    * possibly before the printf is completed.)
    */
   printf("%s: exit(%d)\n", thread_name(), status);
-  sema_up(&p->exit_sync);
-  flist_close_process_files(cur->tid);
-  plist_remove(cur->tid);
+  struct process_elem* p = plist_find(cur->tid);
+  if (p != NULL) {
+    sema_up(&p->exit_sync);
+    flist_close_process_files(cur->tid);
+    plist_remove(cur->tid);
+  }
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
