@@ -32,11 +32,13 @@
  */
 
 #include "filesys/file.h"
+#include "threads/synch.h"
 
 struct flist
 {
   struct list content;
   int next_key;
+  struct lock flist_lock;
 };
 
 struct flist_element {

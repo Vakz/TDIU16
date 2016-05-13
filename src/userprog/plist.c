@@ -18,6 +18,7 @@ int plist_insert(int parent_id, int process_id){
     if (listed_processes[i].used && listed_processes[i].proc_id == process_id) {
       return -1;
     }
+
     if (listed_processes[i].used && listed_processes[i].proc_id == parent_id) {
       parent_exists = true;
     }
@@ -54,9 +55,8 @@ struct process_elem* plist_find(int process_id) {
 
 
 void plist_remove(int process_id){
-  struct process_elem* p;
   for(int i=0; i<PLIST_SIZE; ++i){
-    p = &listed_processes[i];
+    struct process_elem* p = &listed_processes[i];
     if(p->used && p->proc_id == process_id){
       p->alive = false;
       if(!p->parent_alive){
