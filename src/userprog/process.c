@@ -350,6 +350,7 @@ process_cleanup (void)
   printf("%s: exit(%d)\n", thread_name(), status);
   struct process_elem* p = plist_find(cur->tid);
   if (p != NULL) {
+    status = p->exit_status;
     sema_up(&p->exit_sync);
     flist_close_process_files(cur->tid);
     plist_remove(cur->tid);
