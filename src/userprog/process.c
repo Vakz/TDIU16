@@ -340,6 +340,14 @@ process_cleanup (void)
 
   debug("%s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
 
+
+  struct process_elem* p = plist_find(cur->tid);
+  if (p != NULL) {
+    status = p->exit_status;
+    sema_up(&p->exit_sync);
+    flist_close_process_files(cur->tid);
+    plist_remove(cur->tid);
+  }
   /* Later tests DEPEND on this output to work correct. You will have
    * to find the actual exit status in your process list. It is
    * important to do this printf BEFORE you tell the parent process
@@ -348,13 +356,6 @@ process_cleanup (void)
    * possibly before the printf is completed.)
    */
   printf("%s: exit(%d)\n", thread_name(), status);
-  struct process_elem* p = plist_find(cur->tid);
-  if (p != NULL) {
-    status = p->exit_status;
-    sema_up(&p->exit_sync);
-    flist_close_process_files(cur->tid);
-    plist_remove(cur->tid);
-  }
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
