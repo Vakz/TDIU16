@@ -167,6 +167,9 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
+  if (!syscall_verify_fix_pointer((void*)esp, 16)) {
+    thread_exit();
+  }
   switch ( *esp )
   {
     case SYS_HALT:
@@ -184,7 +187,7 @@ syscall_handler (struct intr_frame *f)
     {
       char* name = (char*)esp[1];
       if (!syscall_verify_pointer(name)) {
-        f->eax = -1;
+        thread_exit();
       }
       else {
         f->eax = process_execute(name);
@@ -197,7 +200,7 @@ syscall_handler (struct intr_frame *f)
       // fd, buffer, length
       void* buf = (void*)esp[2];
       if (!syscall_verify_fix_pointer(buf, esp[3])) {
-        f->eax = -1;
+        thread_exit();
       }
       else {
         f->eax = syscall_read(esp[1], buf, esp[3]);
@@ -209,7 +212,7 @@ syscall_handler (struct intr_frame *f)
       // fd, buffer, length
       void* buf = (void*)esp[2];
       if (!syscall_verify_fix_pointer(buf, esp[3])) {
-        f->eax = -1;
+        thread_exit();
       }
       else {
         f->eax = syscall_write(esp[1], buf, esp[3]);
@@ -220,7 +223,7 @@ syscall_handler (struct intr_frame *f)
     {
       char* name = (char*)esp[1];
       if (!syscall_verify_pointer(name)) {
-        f->eax = -1;
+        thread_exit();
       }
       else {
         f->eax = syscall_open(name);
@@ -231,7 +234,7 @@ syscall_handler (struct intr_frame *f)
     {
       char* name = (char*)esp[1];
       if (!syscall_verify_pointer(name)) {
-        f->eax = -1;
+        thread_exit();
       }
       else {
         f->eax = filesys_remove(name);
@@ -242,7 +245,7 @@ syscall_handler (struct intr_frame *f)
     {
       char* name = (char*)esp[1];
       if (!syscall_verify_pointer(name)) {
-        f->eax = -1;
+        thread_exit();
       }
       else {
         f->eax = filesys_create(name, esp[2]);

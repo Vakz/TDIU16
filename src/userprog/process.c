@@ -192,7 +192,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   esp->argv = (char**)esp + 3;
 
   /* calculate where in the memory the words is stored */
-  cmd_line_on_stack = (char*)(esp->argv + argc + 1);
+  cmd_line_on_stack = (char*)(esp->argv + esp->argc + 1);
   /* copy the command_line to where it should be in the stack */
   strlcpy(cmd_line_on_stack, command_line, strlen(command_line) + 1);
   /* build argv array and insert null-characters after each word */
