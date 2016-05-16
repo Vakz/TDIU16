@@ -69,7 +69,9 @@ static bool
 syscall_verify_fix_length(void* start, int length)
 {
   void* end = (void*)((char*)start + length);
+  if (is_kernel_vaddr(end)) return false;
   for (void* i = pg_round_down(start); i < end; i = (void*)((char*)i + PGSIZE)) {
+
     if (pagedir_get_page(thread_current()->pagedir, i) == NULL) return false;
   }
   return true;
@@ -78,14 +80,14 @@ syscall_verify_fix_length(void* start, int length)
 static bool
 syscall_verify_fix_pointer(void* p, int length) {
   if (p == NULL) return false;
-  if (p > PHYS_BASE) return false;
+  if (is_kernel_vaddr(p)) return false;
   return syscall_verify_fix_length(p, length);
 }
 
 static bool
 syscall_verify_pointer(char* p) {
   if (p == NULL) return false;
-  if ((void*)p > PHYS_BASE) return false;
+  if (is_kernel_vaddr(p)) return false;
   return syscall_verify_variable_length(p);
 }
 
@@ -178,6 +180,7 @@ syscall_handler (struct intr_frame *f)
     }
     case SYS_EXIT:
     {
+
       int status = *(esp+1);
       process_exit(status);
       thread_exit();

@@ -169,7 +169,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   bool prev = true;
   // Works by counting the first letter in each word, rather than counting
   // spaces. This way, we avoid multiple spaces between words.
-  while(command_line[i++])
+  while(command_line[i])
   {
     if (command_line[i] != ' ' && prev) {
       ++argc;
@@ -178,6 +178,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
     else if (command_line[i] == ' ') {
       prev = true;
     }
+    i++;
   }
 
   /* calculate the size needed on our simulated stack */
@@ -197,8 +198,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   strlcpy(cmd_line_on_stack, command_line, strlen(command_line) + 1);
   /* build argv array and insert null-characters after each word */
   i = 0;
-  char delim = ' ';
-  for (char* s = strtok_r(cmd_line_on_stack, &delim, &ptr_save); s != NULL; s = strtok_r(NULL, &delim, &ptr_save)) {
+  for (char* s = strtok_r(cmd_line_on_stack, " ", &ptr_save); s != NULL; s = strtok_r(NULL, " ", &ptr_save)) {
     esp->argv[i++] = s;
   }
   esp->argv[i] = 0;
@@ -247,13 +247,13 @@ start_process (struct parameters_to_start_process* parameters)
        "pretend" the arguments are present on the stack. A normal
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
-       if_.esp = setup_main_stack(parameters->command_line, PHYS_BASE);
+       if_.esp = setup_main_stack(parameters->command_line, if_.esp);
        parameters->ret_code = thread_current()->tid;
     /* The stack and stack pointer should be setup correct just before
        the process start, so this is the place to dump stack content
        for debug purposes. Disable the dump when it works. */
 
-    //dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
+    // dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
     plist_insert(parameters->parent_id, thread_current()->tid);
   }
 
