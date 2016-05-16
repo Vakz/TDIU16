@@ -48,6 +48,47 @@ const int argc[] = {
   0
 };
 
+static bool
+syscall_verify_variable_length(char* start)
+{
+  unsigned current_page = pg_no(start);
+  if (pagedir_get_page(thread_current()->pagedir, start) == NULL)
+    return false;
+  for (int i = 0; ; ++i) {
+    char* address = start+i;
+    if (current_page != pg_no(address)) {
+      current_page = pg_no(address);
+      if (pagedir_get_page(thread_current()->pagedir, address) == NULL)
+        return false;
+    }
+    if (*address == '\0') return true;
+  }
+}
+
+static bool
+syscall_verify_fix_length(void* start, int length)
+{
+  void* end = (void*)((char*)start + length);
+  for (void* i = pg_round_down(start); i < end; i = (void*)((char*)i + PGSIZE)) {
+    if (pagedir_get_page(thread_current()->pagedir, i) == NULL) return false;
+  }
+  return true;
+}
+
+static bool
+syscall_verify_fix_pointer(void* p, int length) {
+  if (p == NULL) return false;
+  if (p > PHYS_BASE) return false;
+  return syscall_verify_fix_length(p, length);
+}
+
+static bool
+syscall_verify_pointer(char* p) {
+  if (p == NULL) return false;
+  if ((void*)p > PHYS_BASE) return false;
+  return syscall_verify_variable_length(p);
+}
+
 static int
 syscall_read(int fd, void* buffer, unsigned int length) {
   char* buffer_p = (char*)buffer;
@@ -141,35 +182,71 @@ syscall_handler (struct intr_frame *f)
     }
     case SYS_EXEC:
     {
-      f->eax = process_execute((char*)esp[1]);
+      char* name = (char*)esp[1];
+      if (!syscall_verify_pointer(name)) {
+        f->eax = -1;
+      }
+      else {
+        f->eax = process_execute(name);
+      }
+
       break;
     }
     case SYS_READ:
     {
       // fd, buffer, length
-      f->eax = syscall_read(esp[1], (void*)esp[2], esp[3]);
+      void* buf = (void*)esp[2];
+      if (!syscall_verify_fix_pointer(buf, esp[3])) {
+        f->eax = -1;
+      }
+      else {
+        f->eax = syscall_read(esp[1], buf, esp[3]);
+      }
       break;
     }
     case SYS_WRITE:
     {
       // fd, buffer, length
-      f->eax = syscall_write(esp[1], (void*)esp[2], esp[3]);
+      void* buf = (void*)esp[2];
+      if (!syscall_verify_fix_pointer(buf, esp[3])) {
+        f->eax = -1;
+      }
+      else {
+        f->eax = syscall_write(esp[1], buf, esp[3]);
+      }
       break;
     }
     case SYS_OPEN:
     {
-      f->eax = syscall_open((char*)esp[1]);
+      char* name = (char*)esp[1];
+      if (!syscall_verify_pointer(name)) {
+        f->eax = -1;
+      }
+      else {
+        f->eax = syscall_open(name);
+      }
       break;
     }
     case SYS_REMOVE:
     {
-
-      f->eax = filesys_remove((char*)esp[1]);
+      char* name = (char*)esp[1];
+      if (!syscall_verify_pointer(name)) {
+        f->eax = -1;
+      }
+      else {
+        f->eax = filesys_remove(name);
+      }
       break;
     }
     case SYS_CREATE:
     {
-      f->eax = filesys_create((char*)esp[1], esp[2]);
+      char* name = (char*)esp[1];
+      if (!syscall_verify_pointer(name)) {
+        f->eax = -1;
+      }
+      else {
+        f->eax = filesys_create(name, esp[2]);
+      }
       break;
     }
     case SYS_CLOSE:
